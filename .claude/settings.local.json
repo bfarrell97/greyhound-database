@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr:*)",
+      "Bash(dir /b \"C:\\Users\\bfarr\\Dropbox\\Python\\hong-kong-database\\*.py\")",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(tar:*)",
+      "Bash(bzcat:*)",
+      "Bash(del DUPLICATE_HANDLING.md DUPLICATE_PREVENTION_SUMMARY.md QUICK_REFERENCE_DUPLICATES.md GUI_DISPLAY_UPDATE.md)",
+      "Bash(timeout 30 python:*)",
+      "Bash(del \"c:\\Users\\bfarr\\Dropbox\\Python\\greyhound-database\\test_date_scraper.py\")",
+      "Bash(dir:*)",
+      "Bash(tasklist:*)",
+      "Bash(wmic process where \"name=''python.exe''\" get ProcessId,CommandLine)",
+      "Bash(powershell:*)",
+      "Bash(del \"c:\\Users\\bfarr\\Dropbox\\Python\\greyhound-database\\PARALLEL_PROCESSING_UPDATE.md\")",
+      "Bash(taskkill:*)",
+      "Bash(del check_gardens_benchmarks.py)",
+      "Bash(sqlite3:*)",
+      "Bash(del c:UsersbfarrDropboxPythongreyhound-databaseupcoming_race_scraper.py)",
+      "Bash(if exist \"c:\\Users\\bfarr\\Dropbox\\Python\\greyhound-database\\upcoming_race_scraper.py\" del \"c:\\Users\\bfarr\\Dropbox\\Python\\greyhound-database\\upcoming_race_scraper.py\")",
+      "Bash(ls:*)",
+      "Bash(timeout 5 python:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 10 python:*)",
+      "Bash(timeout 10 sleep:*)",
+      "Bash(timeout 60 tail:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

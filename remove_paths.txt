@@ -1,0 +1,13 @@
+greyhound_racing.db
+models/xgb_v41_final.pkl
+models/xgb_v41_final_prod.pkl
+models/xgb_v44_production.pkl
+models/xgb_v44_steamer.pkl
+models/xgb_v44_test.pkl
+models/xgb_v45_jun25.pkl
+models/xgb_v45_production.pkl
+models/xgb_v45_test.pkl
+src/models/greyhound_model.pkl
+src/models/lay_model.pkl
+greyhound_racing.db-wal
+greyhound_racing.db-shm

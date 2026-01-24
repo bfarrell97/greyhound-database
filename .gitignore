@@ -1,0 +1,13 @@
+# Ignore database and model artifacts
+greyhound_racing.db
+greyhound_racing.db-*
+*.db
+models/*.pkl
+src/models/*.pkl
+
+# Virtual env
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]

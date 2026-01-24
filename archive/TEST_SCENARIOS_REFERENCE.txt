@@ -1,0 +1,50 @@
+"""
+QUICK REFERENCE: What We're Testing and Why
+"""
+
+BASELINE (Current Model):
+  - Recency weights: [2.0, 1.5, 1.0, 1.0, 1.0]
+  - Features: 8 (BoxWinRate, AvgPositionLast3, WinRateLast3, GM_OT_ADJ_1-5)
+  - Performance: 284 bets, 63.7% strike, +1.21% ROI on $1.50-$2.00
+
+SCENARIO 1: AGGRESSIVE RECENCY
+  - Weights: [3.0, 1.5, 0.8, 0.5, 0.3]
+  - Theory: Most recent race is MUCH more predictive
+  - Expected impact: +0.5-1% ROI if recent form matters more
+  - Rationale: Model feature importance shows race 1 = race 5, so maybe current weighting is too flat
+
+SCENARIO 2: MODERATE RECENCY
+  - Weights: [2.0, 1.5, 1.2, 0.9, 0.7]
+  - Theory: Gradual decay instead of plateau
+  - Expected impact: +0.2-0.5% ROI if smooth decay is better
+  - Rationale: Smoother penalty for older races
+
+SCENARIO 3: BALANCED RECENCY
+  - Weights: [2.5, 1.5, 1.0, 1.0, 1.0]
+  - Theory: Split between aggressive and baseline
+  - Expected impact: +0.3-0.8% ROI (middle ground)
+
+SCENARIO 4: NEW FEATURES (Weight + Distance + Box + DaysSince)
+  - Add 4 new features:
+    * WeightClass: Heavy (33+kg) dogs win 15.2%, Light (<30kg) 13.0% → 2.2% edge!
+    * DistanceNorm: Normalized distance (some distances have higher win rates)
+    * BoxDraw: Box 1 wins 19%, Box 5-8 win 12-13% → 6-7% edge!
+    * DaysSinceLastRace: Fitness indicator (if rest time matters)
+  - Expected impact: +1-2% ROI (highest potential!)
+  - Rationale: Data shows clear correlations with win rate
+
+KEY QUESTION THESE ANSWER:
+  1. Is recent form REALLY more important than older form?
+  2. Can we extract additional edge from weight and box position?
+  3. What's the best way to weight race history?
+  4. How much can we improve beyond +1.21% baseline?
+
+TARGET:
+  - Reach +2.5% to +3.5% ROI on $1.50-$2.00 range
+  - This would make it highly profitable (~1 bet per day, $30-50/day at $10 stakes)
+  - Would address the original problem completely (went from -83% to +2-3% ROI)
+
+TIMELINE:
+  Script running now testing all 5 scenarios in parallel
+  Should complete in 20-30 minutes
+  Will show detailed metrics for each scenario
