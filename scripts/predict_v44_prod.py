@@ -17,8 +17,8 @@ except ImportError:
 class MarketAlphaEngine:
     """
     V44/V45 Production Engine
-    - BACK Strategy: V44 Steamer (Threshold 0.35 Flat)
-    - LAY Strategy: V45 Drifter (Threshold 0.55 Flat)
+    - BACK Strategy: V44 Steamer (Threshold 0.45, Price < $15)
+    - LAY Strategy: V45 Drifter (Threshold 0.55, Price $10-$15 ONLY)
     - Historical Data Cached for Fast Predictions
     """
     def __init__(self, db_path='greyhound_racing.db'):
@@ -285,32 +285,42 @@ class MarketAlphaEngine:
         for c in self.v44_features:
             if c not in df.columns: df[c] = 0
             
-        X_v44 = df[self.v44_features]
-        df['Steam_Prob'] = self.model_v44.predict_proba(X_v44)[:, 1]
-        
+        X_v44 = df[self.v44_features].copy()
+        try:
+            df['Steam_Prob'] = self.model_v44.predict_proba(X_v44)[:, 1]
+        except ValueError:
+            # XGBoost sklearn wrapper may require DMatrix with explicit feature names
+            dmat44 = xgb.DMatrix(X_v44, feature_names=self.v44_features)
+            df['Steam_Prob'] = self.model_v44.get_booster().predict(dmat44)
+
         # 6. Predict V45 Drifter
         df['Drift_Prob'] = 0.0
         if self.has_drifter:
             for c in self.v45_features:
                 if c not in df.columns: df[c] = 0
             
-            X_v45 = df[self.v45_features]
-            df['Drift_Prob'] = self.model_v45.predict_proba(X_v45)[:, 1]
+            X_v45 = df[self.v45_features].copy()
+            try:
+                df['Drift_Prob'] = self.model_v45.predict_proba(X_v45)[:, 1]
+            except ValueError:
+                dmat45 = xgb.DMatrix(X_v45, feature_names=self.v45_features)
+                df['Drift_Prob'] = self.model_v45.get_booster().predict(dmat45)
 
         # 7. Signal Logic
         df['Signal'] = 'PASS'
         
         # BACK logic (V44 Production Model)
-        # Flat Threshold: 0.35, Price Cap: $30
-        mask_back = (df['Steam_Prob'] >= 0.35) & (df['Price5Min'] < 30.0)
+        # Threshold: 0.45 (INCREASED for higher confidence), Price Cap: $15
+        mask_back = (df['Steam_Prob'] >= 0.45) & (df['Price5Min'] < 15.0)
         
         df.loc[mask_back, 'Signal'] = 'BACK'
         df.loc[mask_back, 'Confidence'] = df['Steam_Prob']
         
         # LAY logic (V45 Production Model)
-        # Flat Threshold: 0.55, Price Cap: $30
+        # Threshold: 0.55, Odds Range: $10-$15 ONLY (optimal range from analysis)
+        # Safety: Exclude LAYs when Steam_Prob > 0.20 (avoid betting against strong steamers)
         if self.has_drifter:
-            mask_lay = (df['Drift_Prob'] >= 0.55) & (df['Price5Min'] < 30.0)
+            mask_lay = (df['Drift_Prob'] >= 0.55) & (df['Price5Min'] >= 10.0) & (df['Price5Min'] <= 15.0) & (df['Steam_Prob'] <= 0.20)
             
             df.loc[mask_lay, 'Signal'] = 'LAY'
             df.loc[mask_lay, 'Confidence'] = df['Drift_Prob'] 

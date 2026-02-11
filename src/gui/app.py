@@ -1233,12 +1233,12 @@ class GreyhoundRacingApp:
                         except Exception as e:
                             print(f"[UI] Error filtering past races: {e}")
                             
-                        # SAFETY FILTER: Do not LAY if Steam_Prob > 0.25 (User Request)
+                        # SAFETY FILTER: Do not LAY if Steam_Prob > 0.20 (Updated safety rule)
                         if 'Signal' in results.columns and 'Steam_Prob' in results.columns:
-                            mask_risky_lay = (results['Signal'] == 'LAY') & (results['Steam_Prob'] > 0.25)
+                            mask_risky_lay = (results['Signal'] == 'LAY') & (results['Steam_Prob'] > 0.20)
                             if mask_risky_lay.any():
                                 count = mask_risky_lay.sum()
-                                print(f"[SAFETY] Filtered {count} risky LAY signals (Steam_Prob > 0.25)")
+                                print(f"[SAFETY] Filtered {count} risky LAY signals (Steam_Prob > 0.20)")
                                 results.loc[mask_risky_lay, 'Signal'] = '' # Clear signal
                             
                         df_all = results # Keep consistent for display loop
@@ -2575,9 +2575,9 @@ class GreyhoundRacingApp:
                                     print(f"[AUTO] SKIP {bet['dog']}: No LTP available (Live or Cached)")
                                     continue
                                 
-                                # SAFETY: Skip if over $30.0 initial
-                                if current_price > 30.0:
-                                    print(f"[AUTO] Skipping Lay {bet['dog']}: Price ${current_price} > $30.0")
+                                # SAFETY: Skip if over $15.0 initial
+                                if current_price > 15.0:
+                                    print(f"[AUTO] Skipping Lay {bet['dog']}: Price ${current_price} > $15.0")
                                     continue
                             else:
                                 current_price = ltp if ltp else (back_price if back_price else 0)
@@ -3223,11 +3223,11 @@ class GreyhoundRacingApp:
                                                 target_price = ltp
                                                 
                                                 # SAFETY: Hard Cap (User Request)
-                                                if target_price > 30.0:
-                                                    print(f"[AUTO] 🛑 Lay Price Limit Exceeded: ${target_price} > $30.0")
+                                                if target_price > 15.0:
+                                                    print(f"[AUTO] 🛑 Lay Price Limit Exceeded: ${target_price} > $15.0")
                                                     if fetcher.cancel_bet(market_id, bf_bet_id):
                                                         bet['status'] = 'CANCELLED'
-                                                        self._on_scheduled_bet_placed(bid, "CANCELLED", "Over $30 Cap")
+                                                        self._on_scheduled_bet_placed(bid, "CANCELLED", "Over $15 Cap")
                                                         # Log
                                                         try: self.result_tracker.log_bet({"Status": "CAP_EXIT", "BetType": "LAY", "Dog": bet['dog'], "MarketID": market_id})
                                                         except: pass
@@ -5436,7 +5436,7 @@ class GreyhoundRacingApp:
         elif model_key == 'v44':
             # V44 Steamer Production & V45 Drifter
             roi_text = "V44/V45 PROD (2025):\nSteamer ROI: +21.3%\nDrifter ROI: +21.9% (at 0.65)\n(Inc. 5% Comm)"
-            logic = "V44 Strategy (BACK):\n- Threshold > 0.40 | Price < $30\n\nV45 Strategy (LAY):\n- Threshold > 0.65 | Price < $30"
+            logic = "V44 Strategy (BACK):\n- Threshold > 0.35 | Price < $15\n\nV45 Strategy (LAY):\n- Threshold > 0.65 | Price < $15"
             metrics = {
                 'roi_text': roi_text,
                 'best_score': "N/A (Prod)",

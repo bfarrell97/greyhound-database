@@ -12,7 +12,7 @@
 *   **Model:** `xgb_v44_steamer.pkl` (Production)
 *   **Trigger Condition:**
     *   **Probability >= 0.35** (35%)
-    *   **Price < $30.00**
+    *   **Price < $15.00**
     *   **Track != Tasmania** (Launceston, Hobart, Devonport)
 *   **Execution:** 
     *   Place at Current Market Price.
@@ -23,8 +23,9 @@
 *   **Model:** `xgb_v45_production.pkl` (Production)
 *   **Trigger Condition:**
     *   **Drift Probability >= 0.60** (60%)
-    *   **Price < $30.00**
+    *   **Price < $15.00**
     *   **Track != Tasmania**
+    *   **Safety Exclusion:** Do **not** place LAY bets when `Steam_Prob` > **0.20**
 *   **Execution:**
     *   Place Lay bet at Current Market Price.
     *   **Volume Control:** Max 2 Lays per race (top 2 by confidence).

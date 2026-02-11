@@ -32,13 +32,13 @@ JOIN Greyhounds g ON ge.GreyhoundID = g.GreyhoundID
 WHERE rm.MeetingDate = ?
 AND ge.Price5Min IS NOT NULL
 AND ge.Price5Min > 0
-AND ge.Price5Min < 30
+AND ge.Price5Min < 15
 """
 
 df = pd.read_sql_query(query, conn, params=[today])
 conn.close()
 
-print(f"\nLoaded {len(df)} runners with Price5Min < $30 for today")
+print(f"\nLoaded {len(df)} runners with Price5Min < $15 for today")
 
 if df.empty:
     print("ERROR: No data to predict on!")

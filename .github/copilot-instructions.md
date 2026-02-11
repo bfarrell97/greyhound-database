@@ -40,7 +40,7 @@ Betfair API (LivePriceScraper) -> SQLite DB (greyhound_racing.db) -> MarketAlpha
 *   **Target**: High-confidence steamers.
 *   **Logic**:
     *   `Steam_Prob` >= **0.35**
-    *   `Price` < **$30.00**
+    *   `Price` < **$15.00**
     *   **Track** != Tasmania
 *   **Execution**: Place at LTP.
 
@@ -48,8 +48,9 @@ Betfair API (LivePriceScraper) -> SQLite DB (greyhound_racing.db) -> MarketAlpha
 *   **Target**: Drifting favorites.
 *   **Logic**:
     *   `Drift_Prob` >= **0.60**
-    *   `Price` < **$30.00**
+    *   `Price` < **$15.00**
     *   **Track** != Tasmania
+    *   **Safety Exclusion:** Do NOT place LAY when `Steam_Prob` > **0.20**
 *   **Execution**: Place Lay at LTP. Max 2 per race.
 
 ### C. COVER Strategy
