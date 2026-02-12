@@ -30,6 +30,10 @@ dev = [
     "mypy>=1.5.0",
 ]
 
+[tool.setuptools]
+package-dir = {"" = "."}
+packages = {find = {where = ["."], include = ["src*"]}}
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
