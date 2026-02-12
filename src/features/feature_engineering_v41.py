@@ -1,6 +1,9 @@
-"""Legacy feature engineering (V41) - DEPRECATED.
+"""Feature engineering V41 - Used by V44/V45 models.
 
-⚠️ Older version kept for reference. Use feature_engineering.py instead.
+⚠️ This version (V41) is actively used by predict_v41_tips.py which generates
+features for the V44 Back Steamer and V45 Lay Drifter production models.
+
+DO NOT REMOVE - Required for production predictions.
 """
 
 import pandas as pd
