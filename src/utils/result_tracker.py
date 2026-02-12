@@ -1,31 +1,84 @@
+"""Bet result tracking and CSV logging for live betting.
+
+Maintains a CSV file (live_bets.csv) with bet history, results, and P/L tracking.
+Provides methods for logging bets, updating results, and calculating statistics.
+
+Example:
+    >>> from src.utils.result_tracker import ResultTracker
+    >>> tracker = ResultTracker()
+    >>> bet = {
+    ...     'MarketID': '1.12345',
+    ...     'Dog': 'Fast Freddy',
+    ...     'Stake': 10.0,
+    ...     'Price': 6.0,
+    ...     'BetType': 'BACK'
+    ... }
+    >>> tracker.log_bet(bet)
+"""
 
 import os
 import csv
 import pandas as pd
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
+
 
 class ResultTracker:
+    """Tracks live bets and updates results in CSV file.
+    
+    Logs all placed bets to 'live_bets.csv' and provides methods to update
+    bet status, results (WIN/LOSS), BSP, and profit/loss calculations.
+    
+    Attributes:
+        FILE_PATH (str): Path to CSV file (default: 'live_bets.csv')
+        COLUMNS (List[str]): CSV column names
+    
+    Example:
+        >>> tracker = ResultTracker()
+        >>> tracker.log_bet({'Dog': 'Fast Freddy', 'Stake': 10.0, ...})
+        >>> tracker.update_result('BET123', result='WIN', bsp=5.5, profit=45.0)
+    """
     """
     Tracks live bets and updates their results (P&L, Winners, BSP) 
     in a CSV file: 'live_bets.csv'
     """
     
-    FILE_PATH = "live_bets.csv"
-    COLUMNS = [
+    FILE_PATH: str = "live_bets.csv"
+    COLUMNS: List[str] = [
         "MarketID", "SelectionID", "BetID", "Date", "Time", 
         "Track", "Race", "Dog", "BetType", 
         "Status", "Stake", "Price", "BSP", "Result", "Profit"
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize tracker and ensure CSV file exists."""
         self._ensure_file_exists()
 
-    def _ensure_file_exists(self):
+    def _ensure_file_exists(self) -> None:
+        """Create CSV file with headers if it doesn't exist."""
         if not os.path.exists(self.FILE_PATH):
             pd.DataFrame(columns=self.COLUMNS).to_csv(self.FILE_PATH, index=False)
 
-    def log_bet(self, bet_data: Dict):
+    def log_bet(self, bet_data: Dict[str, Any]) -> None:
+        """Log a new bet to the CSV file.
+        
+        Args:
+            bet_data: Dictionary with bet details. Should contain keys matching
+                     COLUMNS. Missing keys will be filled with empty strings.
+                     Date defaults to today if not provided.
+        
+        Example:
+            >>> bet = {
+            ...     'MarketID': '1.12345',
+            ...     'Dog': 'Fast Freddy',
+            ...     'BetType': 'BACK',
+            ...     'Stake': 10.0,
+            ...     'Price': 6.0,
+            ...     'Status': 'PLACED'
+            ... }
+            >>> tracker.log_bet(bet)
+            [TRACKER] Logged bet: Fast Freddy (PLACED)
+        """
         """
         Log a new bet to the CSV.
         bet_data must contain keys matching COLUMNS (or a subset).

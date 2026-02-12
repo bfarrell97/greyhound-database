@@ -1,3 +1,31 @@
+"""Bet scheduling system for delayed bet placement.
+
+Schedules bets to be placed at specific times (e.g., T-5 minutes before jump).
+Uses background thread to monitor queue and execute bets at scheduled times.
+
+Supports:
+- Queue bets for future placement
+- Price threshold checks (skip if price too high)
+- Status tracking (SCHEDULED, PLACED, SKIPPED, ERROR)
+- Callback notifications on bet placement
+
+Example:
+    >>> from src.integration.bet_scheduler import BetScheduler
+    >>> scheduler = BetScheduler()
+    >>> scheduler.start()
+    >>> 
+    >>> # Schedule bet for 5 minutes before race
+    >>> scheduler.schedule_bet(
+    ...     bet_id="BET001",
+    ...     market_id="1.12345",
+    ...     selection_id=789,
+    ...     dog_name="Fast Freddy",
+    ...     race_time="14:30",
+    ...     minutes_before=5,
+    ...     stake=10.0,
+    ...     max_price=8.0
+    ... )
+"""
 """
 Bet Scheduler Module
 ====================
@@ -7,13 +35,29 @@ Uses a background thread that checks the queue every 10 seconds.
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Callable, Optional
+from typing import Dict, List, Callable, Optional, Any
 from dataclasses import dataclass
 import queue
 
 
 @dataclass
 class ScheduledBet:
+    """A bet scheduled for future placement.
+    
+    Attributes:
+        bet_id (str): Unique identifier for this scheduled bet
+        market_id (str): Betfair MarketID
+        selection_id (int): Betfair SelectionID (dog)
+        dog_name (str): Dog name
+        track_name (str): Track name
+        race_number (int): Race number
+        race_time (str): Race start time (HH:MM format)
+        scheduled_time (datetime): When to place the bet
+        stake (float): Bet amount
+        max_price (float): Maximum acceptable odds (skip if higher)
+        status (str): Current status (SCHEDULED, PLACED, SKIPPED, ERROR)
+        result_message (str): Status message or error description
+    """
     """A bet scheduled to be placed at a specific time"""
     bet_id: str  # Unique identifier for this scheduled bet
     market_id: str
@@ -30,14 +74,52 @@ class ScheduledBet:
 
 
 class BetScheduler:
+    """Background scheduler for delayed bet placement.
+    
+    Runs in a separate thread, monitoring a queue of scheduled bets and
+    executing them at the specified times. Checks price thresholds before
+    placing bets and provides status callbacks.
+    
+    Attributes:
+        fetcher: Betfair odds fetcher (for price checks)
+        on_bet_placed: Callback function called after bet placement
+        _scheduled_bets: Queue of ScheduledBet objects
+        _worker_thread: Background worker thread
+        _stop_event: Threading event for graceful shutdown
+    
+    Example:
+        >>> def bet_callback(bet):
+        ...     print(f"Placed: {bet.dog_name} @ ${bet.stake}")
+        >>> 
+        >>> scheduler = BetScheduler(on_bet_placed=bet_callback)
+        >>> scheduler.start()
+        >>> # Schedule bets...
+        >>> scheduler.stop()
+    """
     """
     Background scheduler that places bets at specified times.
     Designed for placing BACK bets 5 minutes before race start.
     """
     
-    def __init__(self, fetcher=None, on_bet_placed: Callable = None):
+    def __init__(
+        self,
+        fetcher: Optional[Any] = None,
+        on_bet_placed: Optional[Callable] = None
+    ) -> None:
+        """Initialize the bet scheduler.
+
+        Args:
+            fetcher: Betfair odds fetcher for price checks (optional)
+            on_bet_placed: Callback function(bet: ScheduledBet) called after placement
+        
+        Example:
+            >>> scheduler = BetScheduler()
+            >>> scheduler.start()
+        """
         """
         Initialize the scheduler.
+
+[244 more lines in file. Use offset=82 to continue.]
         
         Args:
             fetcher: BetfairOddsFetcher instance (will create one if None)

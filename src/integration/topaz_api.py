@@ -1,3 +1,16 @@
+"""Topaz API client for historical greyhound racing form data.
+
+Provides access to historical race results, dog statistics, and form guides
+via the Greyhound Racing Victoria (GRV) Topaz API.
+
+Example:
+    >>> from src.integration.topaz_api import TopazAPI
+    >>> from src.core.config import TOPAZ_API_KEY
+    >>> 
+    >>> api = TopazAPI(TOPAZ_API_KEY)
+    >>> races = api.get_upcoming_races(days=7)
+    >>> print(f"Found {len(races)} races in next 7 days")
+"""
 """
 Topaz API Client for Greyhound Racing Victoria
 Provides access to greyhound racing data via the GRV Topaz API
@@ -9,6 +22,23 @@ from typing import Optional, List, Dict, Any
 
 
 class TopazAPI:
+    """REST API client for GRV Topaz historical form data.
+    
+    Provides methods to fetch:
+    - Upcoming race schedules
+    - Historical race results
+    - Dog form guides and statistics
+    - Track information
+    
+    Attributes:
+        api_key (str): Topaz API key for authentication
+        base_url (str): API endpoint base URL
+        TRACK_STATE_MAP (Dict): Mapping of track codes to Australian states
+    
+    Example:
+        >>> api = TopazAPI(api_key="your_key")
+        >>> races = api.get_upcoming_races(days=1)
+    """
     """Client for interacting with the GRV Topaz API"""
 
     # Track code to state mapping (common tracks)
@@ -33,7 +63,15 @@ class TopazAPI:
         'WAN': 'NZ', 'ADK': 'NZ', 'HUT': 'NZ'
     }
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str) -> None:
+        """Initialize Topaz API client.
+
+        Args:
+            api_key: Topaz API key (obtain from GRV Topaz platform)
+        
+        Example:
+            >>> api = TopazAPI(api_key="abc123xyz")
+        """
         """
         Initialize the Topaz API client
 

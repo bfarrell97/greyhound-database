@@ -1,32 +1,110 @@
-"""
-Greyhound Racing Database Module
-Based on Hong Kong Racing Database structure
-Stores race data, greyhound information, and sectional times
+"""Greyhound Racing Database Module.
+
+SQLite database layer for storing and retrieving greyhound racing data including:
+- Race meetings and individual races
+- Greyhound profiles (dogs, trainers, owners)
+- Race results and historical performance
+- Live prices and betting odds
+- Placed bets and P/L tracking
+
+The schema supports 365-day rolling history for feature engineering and model training.
+
+Example:
+    >>> from src.core.database import GreyhoundDatabase
+    >>> db = GreyhoundDatabase()
+    >>> tracks = db.get_all_tracks()
+    >>> print(f"Found {len(tracks)} tracks")
+    Found 47 tracks
 """
 
 import sqlite3
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, Tuple
 import json
 
 
 class GreyhoundDatabase:
-    """Database handler for Greyhound racing data"""
+    """SQLite database handler for greyhound racing data.
+    
+    Provides comprehensive CRUD operations for all racing entities:
+    tracks, meetings, races, greyhounds, trainers, results, prices, and bets.
+    
+    The database automatically creates tables on initialization if they don't exist.
+    Uses SQLite's row factory for dict-like result access.
+    
+    Attributes:
+        db_path (str): Path to SQLite database file
+        conn (sqlite3.Connection): Active database connection (lazy-loaded)
+    
+    Example:
+        >>> db = GreyhoundDatabase('test.db')
+        >>> race_id = db.insert_race(meeting_id=1, race_number=5, distance=500)
+        >>> race = db.get_race(race_id)
+        >>> print(race['Distance'])
+        500
+    """
 
-    def __init__(self, db_path='greyhound_racing.db'):
+    def __init__(self, db_path: str = 'greyhound_racing.db') -> None:
+        """Initialize database handler and create tables.
+        
+        Args:
+            db_path: Path to SQLite database file. Defaults to 'greyhound_racing.db'.
+                    Use ':memory:' for in-memory testing database.
+        
+        Example:
+            >>> # Production database
+            >>> db = GreyhoundDatabase()
+            >>> 
+            >>> # Test database (in-memory)
+            >>> test_db = GreyhoundDatabase(':memory:')
+        """
         self.db_path = db_path
-        self.conn = None
+        self.conn: Optional[sqlite3.Connection] = None
         self.create_tables()
 
-    def get_connection(self):
-        """Get or create database connection"""
+    def get_connection(self) -> sqlite3.Connection:
+        """Get or create database connection with row factory.
+        
+        Lazily creates connection on first access. Subsequent calls return
+        the same connection. Uses sqlite3.Row for dict-like row access.
+        
+        Returns:
+            Active SQLite connection with row factory enabled
+        
+        Example:
+            >>> conn = db.get_connection()
+            >>> cursor = conn.cursor()
+            >>> cursor.execute("SELECT * FROM Tracks LIMIT 1")
+            >>> row = cursor.fetchone()
+            >>> print(row['TrackName'])  # Dict-like access
+            Wentworth Park
+        """
         if not self.conn:
             self.conn = sqlite3.connect(self.db_path)
             self.conn.row_factory = sqlite3.Row
         return self.conn
 
-    def create_tables(self):
-        """Create database tables for greyhound racing"""
+    def create_tables(self) -> None:
+        """Create all database tables if they don't exist.
+        
+        Creates the complete schema including:
+        - Tracks: Racing venues (47 tracks across Australia/NZ)
+        - Greyhounds: Dog profiles with career statistics
+        - Trainers: Trainer profiles
+        - Owners: Owner profiles
+        - RaceMeetings: Daily race meetings
+        - Races: Individual race details
+        - RaceResults: Dog performance and finishing positions
+        - LivePrices: Price snapshots from T-60min to jump
+        - LiveBets: Placed bets with P/L tracking
+        
+        Called automatically on database initialization. Safe to call multiple times.
+        
+        Example:
+            >>> db = GreyhoundDatabase(':memory:')
+            >>> # Tables already created by __init__
+            >>> db.create_tables()  # Safe to call again (no-op)
+        """
         conn = self.get_connection()
         cursor = conn.cursor()
 
@@ -224,8 +302,32 @@ class GreyhoundDatabase:
 
         conn.commit()
 
-    def add_or_get_track(self, track_key, track_name, state=None, country='AUS'):
-        """Add track or return existing ID"""
+    def add_or_get_track(
+        self,
+        track_key: str,
+        track_name: str,
+        state: Optional[str] = None,
+        country: str = 'AUS'
+    ) -> int:
+        """Add track to database or return existing track ID.
+        
+        Uses INSERT OR IGNORE to handle duplicates gracefully. Track is uniquely
+        identified by track_key (e.g., 'WENTWORTH_PARK').
+        
+        Args:
+            track_key: Unique identifier for track (e.g., 'WENTWORTH_PARK')
+            track_name: Display name (e.g., 'Wentworth Park')
+            state: State/territory (e.g., 'NSW', 'VIC'). Optional.
+            country: Country code. Defaults to 'AUS'.
+        
+        Returns:
+            Track ID (integer)
+        
+        Example:
+            >>> track_id = db.add_or_get_track('SANDOWN_PARK', 'Sandown Park', 'VIC')
+            >>> print(track_id)
+            5
+        """
         conn = self.get_connection()
         cursor = conn.cursor()
 

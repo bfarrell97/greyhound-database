@@ -1,3 +1,4 @@
+"""Temporary virtual function helpers for GUI (DEPRECATED).\n\n⚠️ Legacy code - may be removed in future versions.\n"""\n
     def _get_virtual_live_data(self):
         """
         Fetch LIVE Betfair markets and create 'Virtual' database rows for today's runners.

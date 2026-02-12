@@ -1,3 +1,27 @@
+"""XGBoost-based ML model for greyhound racing predictions.
+
+Provides comprehensive ML pipeline for predicting race winners:
+- Data loading from SQLite database
+- Feature engineering and encoding
+- XGBoost training (classifier/regressor)
+- Model evaluation and metrics
+- Prediction on new races
+- Model persistence (save/load)
+
+Supports multiple feature sets and hyperparameter tuning.
+
+Example:
+    >>> from src.models.ml_model import GreyhoundMLModel
+    >>> model = GreyhoundMLModel(db_path='greyhound_racing.db')
+    >>> model.load_and_prepare_data(months_back=12)
+    >>> model.train_model()
+    >>> model.save_model('models/greyhound_xgb.pkl')
+    >>> 
+    >>> # Later: load and predict
+    >>> loaded_model = GreyhoundMLModel()
+    >>> loaded_model.load_model('models/greyhound_xgb.pkl')
+    >>> predictions = loaded_model.predict(new_race_data)
+"""
 """
 Greyhound Racing ML Model
 Predicts race winners using XGBoost based on historical performance data
@@ -7,6 +31,7 @@ import sqlite3
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from typing import Optional, List, Dict, Any, Tuple
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -22,7 +47,40 @@ import os
 
 
 class GreyhoundMLModel:
-    def __init__(self, db_path='greyhound_racing.db'):
+    """XGBoost machine learning model for greyhound race predictions.
+    
+    Complete ML pipeline from data loading to prediction:
+    1. Load historical data from database
+    2. Engineer features (form, track bias, trainer stats)
+    3. Train XGBoost classifier/regressor
+    4. Evaluate performance (accuracy, ROC-AUC, etc.)
+    5. Make predictions on new races
+    6. Save/load trained models
+    
+    Attributes:
+        db_path (str): Path to SQLite database
+        model: Trained XGBoost model
+        track_encoder (LabelEncoder): Encoder for track names
+        feature_columns (List[str]): List of feature names used in training
+    
+    Example:
+        >>> model = GreyhoundMLModel()
+        >>> model.load_and_prepare_data(months_back=6)
+        >>> model.train_model(test_size=0.2)
+        >>> model.evaluate()
+        Accuracy: 0.35
+        ROC-AUC: 0.72
+    """
+
+    def __init__(self, db_path: str = 'greyhound_racing.db') -> None:
+        """Initialize ML model with database connection.
+        
+        Args:
+            db_path: Path to SQLite database with race history
+        
+        Example:
+            >>> model = GreyhoundMLModel(db_path='test.db')
+        """
         self.db_path = db_path
         # print(f"[DEBUG] GreyhoundMLModel initialized with DB: {os.path.abspath(self.db_path)}")
         self.model = None

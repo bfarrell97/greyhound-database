@@ -1,3 +1,23 @@
+"""Betfair Exchange API client for greyhound racing odds and betting.
+
+Provides REST API client for:
+- Authentication (login/session management)
+- Market discovery (find upcoming greyhound races)
+- Odds retrieval (live prices and volumes)
+- Bet placement (BACK and LAY bets)
+- Order management (current/cleared orders)
+
+Requires Betfair account with API access enabled.
+
+Example:
+    >>> from src.integration.betfair_api import BetfairAPI
+    >>> from src.core.config import BETFAIR_APP_KEY, BETFAIR_USERNAME, BETFAIR_PASSWORD
+    >>> 
+    >>> api = BetfairAPI(BETFAIR_APP_KEY, BETFAIR_USERNAME, BETFAIR_PASSWORD)
+    >>> api.login()
+    >>> markets = api.list_markets(event_type='Greyhound Racing')
+    >>> print(f"Found {len(markets)} greyhound markets")
+"""
 """
 Betfair API Client for Greyhound Racing Odds
 Provides access to current betting odds via Betfair Exchange API
@@ -10,6 +30,32 @@ from typing import Optional, List, Dict, Any
 
 
 class BetfairAPI:
+    """REST API client for Betfair Exchange.
+    
+    Handles authentication, market queries, and bet placement via Betfair's
+    JSON-RPC API. Supports session token management and automatic retries.
+    
+    API Documentation:
+        https://docs.developer.betfair.com/display/1smk3cen4v3lu3yomq5qye0ni
+    
+    Requirements:
+        1. Betfair account with API access enabled
+        2. Application key (app key) from Betfair Developer Program
+        3. Username and password for authentication
+    
+    Attributes:
+        app_key (str): Betfair application key
+        username (str): Betfair account username
+        password (str): Betfair account password
+        session_token (str): Active session token (set after login)
+        base_url (str): API endpoint for betting operations
+        identity_url (str): API endpoint for authentication
+    
+    Example:
+        >>> api = BetfairAPI(app_key="YOUR_KEY", username="user", password="pass")
+        >>> api.login()
+        >>> markets = api.list_markets()
+    """
     """
     Client for interacting with the Betfair Exchange API
 
@@ -27,7 +73,25 @@ class BetfairAPI:
     4. Add credentials to config.py
     """
 
-    def __init__(self, app_key: str, username: Optional[str] = None, password: Optional[str] = None):
+    def __init__(
+        self,
+        app_key: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None
+    ) -> None:
+        """Initialize Betfair API client.
+
+        Args:
+            app_key: Your Betfair application key
+            username: Betfair account username (optional, required for login)
+            password: Betfair account password (optional, required for login)
+        
+        Example:
+            >>> api = BetfairAPI(app_key="abc123")
+            >>> # Later set credentials
+            >>> api.username = "user@example.com"
+            >>> api.password = "password"
+        """
         """
         Initialize Betfair API client
 
@@ -44,7 +108,25 @@ class BetfairAPI:
         # Australia & New Zealand endpoint as per documentation
         self.identity_url = "https://identitysso.betfair.com.au/api"
 
-    def login(self):
+    def login(self) -> str:
+        """Authenticate with Betfair and obtain session token.
+        
+        Requires username and password to be set. Session tokens typically
+        expire after 8 hours and must be refreshed.
+        
+        Returns:
+            Session token string
+        
+        Raises:
+            ValueError: If username or password not set
+            Exception: If login fails (invalid credentials, network error)
+        
+        Example:
+            >>> api = BetfairAPI(app_key="abc", username="user", password="pass")
+            >>> token = api.login()
+            >>> print(f"Logged in with token: {token[:10]}...")
+            Logged in with token: abcdef1234...
+        """
         """
         Login to Betfair and get session token
 

@@ -1,3 +1,48 @@
+"""Main Tkinter GUI application for Greyhound Racing Analysis System.
+
+5,700+ line application providing:
+
+**Core Features:**
+- Live Alpha Radar: Top 5 betting prospects with model confidence scores
+- Active Bets Panel: Real-time tracking of unmatched and matched bets
+- Settled Bets Panel: Historical bet results with P/L
+- Manual Bet Controls: Place, cancel, and manage bets manually
+- Market Monitoring: Continuous price scraping and prediction updates
+
+**Architecture:**
+- Main thread: GUI rendering and user input
+- Background threads:
+  - Price scraper (60-second intervals)
+  - Market alpha engine (30-second predictions)
+  - Result tracker (120-second settlements)
+  - Betfair session keep-alive (15-minute pings)
+
+**Key Classes:**
+- GreyhoundApp: Main application controller
+- LiveBettingManager: Bet placement and tracking
+- BetfairOddsFetcher: Market data retrieval
+- MarketAlphaEngine: V44/V45 ML predictions
+
+**Threading Model:**
+All background operations run in daemon threads to avoid blocking the GUI.
+Updates to GUI are queued via `root.after()` for thread safety.
+
+**Session Management:**
+Maintains persistent Betfair login with automatic token refresh every 8 hours.
+
+Example:
+    >>> import tkinter as tk
+    >>> from src.gui.app import GreyhoundApp
+    >>> 
+    >>> root = tk.Tk()
+    >>> app = GreyhoundApp(root)
+    >>> root.mainloop()
+
+Note:
+    This file is intentionally large (5,747 lines) and should be refactored
+    into smaller modules in future versions. Current structure prioritizes
+    working functionality over code organization.
+"""
 """
 Greyhound Racing GUI Application
 Main application for viewing race data and comparisons

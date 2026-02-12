@@ -1,10 +1,27 @@
+"""Legacy feature engineering (V38) - DEPRECATED.
+
+⚠️ This file contains an older version of feature engineering logic.
+It is kept for historical reference and backward compatibility only.
+
+Current production version: feature_engineering.py (V37)
+
+Do not use this module for new development.
+"""
+
 import pandas as pd
 import numpy as np
 import re
 
+
 class FeatureEngineerV38:
-    def __init__(self):
-        self.mappings = {}
+    """Legacy feature engineer V38 - DEPRECATED.
+    
+    Use FeatureEngineerV37 from feature_engineering.py instead.
+    """
+
+    def __init__(self) -> None:
+        """Initialize legacy feature engineer V38."""
+        self.mappings: dict = {}
 
     def parse_in_run(self, val):
         """

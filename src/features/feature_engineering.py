@@ -1,11 +1,88 @@
+"""Feature engineering for greyhound racing predictions.
+
+Calculates predictive features from historical race data including:
+- Lag features (dog-specific recent performance)
+- Trainer form (win rates, runs)
+- Box bias (track/distance/box win probabilities)
+- Track experience (dog familiarity with track)
+
+Features are calculated in a time-aware manner to prevent data leakage
+(no future information used in training/prediction).
+
+Example:
+    >>> from src.features.feature_engineering import FeatureEngineerV37
+    >>> engineer = FeatureEngineerV37()
+    >>> df_with_features, feature_names = engineer.engineer_features(raw_df)
+    >>> print(f"Created {len(feature_names)} features")
+    Created 9 features
+"""
+
 import pandas as pd
 import numpy as np
+from typing import Tuple, List
+
 
 class FeatureEngineerV37:
-    def __init__(self):
-        self.mappings = {}
+    """Feature engineering for greyhound racing ML models.
+    
+    Generates time-series features from historical race data with strict
+    temporal ordering to prevent data leakage. Uses daily aggregations
+    and lag shifts to ensure no future information is used.
+    
+    Features Generated:
+        - Split_Lag1, Split_Lag2: Dog's recent split times
+        - Place_Lag1: Dog's last finishing position
+        - RunSpeed_Lag1: Dog's recent finish time
+        - Trainer_Win_Rate: Trainer's cumulative win rate
+        - Trainer_Runs_Life: Trainer's total career runs
+        - Box_Win_Prob: Win probability for box/track/distance
+        - Box_History_Runs: Historical runs from this box
+        - Dog_Track_Runs: Number of times dog has run at this track
+    
+    Attributes:
+        mappings (dict): Internal mappings (reserved for future use)
+    
+    Example:
+        >>> engineer = FeatureEngineerV37()
+        >>> df, features = engineer.engineer_features(raw_data)
+        >>> print(features)
+        ['Trainer_Win_Rate', 'Box_Win_Prob', 'Split_Lag1', ...]
+    """
 
-    def engineer_features(self, df):
+    def __init__(self) -> None:
+        """Initialize feature engineer."""
+        self.mappings: dict = {}
+
+    def engineer_features(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+        """Generate features from raw racing data.
+        
+        Performs time-aware feature engineering with strict temporal ordering.
+        Sorts data by date/time, calculates lag features, trainer form, box bias,
+        and track experience.
+        
+        Args:
+            df: Raw racing DataFrame with columns:
+                - date_dt: Race date (datetime)
+                - RaceTime: Race time (HH:MM:SS string)
+                - RaceID: Unique race identifier
+                - GreyhoundID: Dog identifier
+                - TrainerID: Trainer identifier
+                - RawTrack: Track name
+                - Distance: Race distance (meters)
+                - RawBox: Starting box number (1-8)
+                - Place: Finishing position
+                - Split: Split time (seconds)
+                - FinishTime: Final time (seconds)
+        
+        Returns:
+            Tuple of (enriched_dataframe, feature_names_list)
+        
+        Example:
+            >>> raw = load_historical_data()
+            >>> df_features, features = engineer.engineer_features(raw)
+            >>> X = df_features[features]
+            >>> y = df_features['win']
+        """
         """
         Main entry point. 
         df: DataFrame containing raw racing data

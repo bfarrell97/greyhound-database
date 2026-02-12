@@ -1,15 +1,59 @@
+"""Paper trading simulation for testing betting strategies without real money.
+
+Provides a PaperTradingManager class that maintains a separate SQLite database
+for simulated bets. Tracks hypothetical P/L and allows strategy backtesting.
+
+Example:
+    >>> from src.core.paper_trading import PaperTradingManager
+    >>> manager = PaperTradingManager()
+    >>> bet = {
+    ...     'GreyhoundName': 'Fast Freddy',
+    ...     'RaceNumber': 5,
+    ...     'TrackName': 'Wentworth Park',
+    ...     'Strategy': 'V44_BACK',
+    ...     'Odds': 6.0,
+    ...     'Stake': 10.0
+    ... }
+    >>> manager.place_bet(bet)
+    True
+"""
+
 import sqlite3
+from typing import Dict, List, Optional, Any
 import pandas as pd
 from datetime import datetime
 
-DB_PATH = 'paper_trading.db'
-RACING_DB_PATH = 'greyhound_racing.db'
+DB_PATH: str = 'paper_trading.db'
+RACING_DB_PATH: str = 'greyhound_racing.db'
+
 
 class PaperTradingManager:
-    def __init__(self):
+    """Manager for simulated (paper) trading without real money.
+    
+    Maintains a separate database for tracking hypothetical bets. Allows
+    testing strategies and risk management without financial risk.
+    
+    Attributes:
+        DB_PATH: Path to paper trading database
+        RACING_DB_PATH: Path to main greyhound racing database
+    
+    Example:
+        >>> manager = PaperTradingManager()
+        >>> open_bets = manager.get_open_bets()
+        >>> print(f"Open positions: {len(open_bets)}")
+        Open positions: 3
+    """
+
+    def __init__(self) -> None:
+        """Initialize paper trading manager and create database if needed."""
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
+        """Initialize the paper trading database with PaperBets table.
+        
+        Creates table with columns: BetID, BetDate, GreyhoundName, RaceNumber,
+        TrackName, Strategy, Odds, Stake, Status, Return, Profit, ResultTime.
+        """
         """Initialize the paper trading database"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -34,7 +78,30 @@ class PaperTradingManager:
         conn.commit()
         conn.close()
 
-    def place_bet(self, bet_data):
+    def place_bet(self, bet_data: Dict[str, Any]) -> bool:
+        """Place a new paper (simulated) bet.
+        
+        Checks for duplicates before placing. A duplicate is defined as the same
+        dog, race, and track with an OPEN status.
+        
+        Args:
+            bet_data: Dictionary containing:
+                - GreyhoundName (str): Dog name
+                - RaceNumber (int): Race number
+                - TrackName (str): Track name
+                - Strategy (str): Strategy used (e.g., 'V44_BACK')
+                - Odds (float): Betting odds
+                - Stake (float): Bet amount
+        
+        Returns:
+            True if bet placed successfully, False if duplicate detected
+        
+        Example:
+            >>> bet = {'GreyhoundName': 'Fast Freddy', 'RaceNumber': 5, ...}
+            >>> success = manager.place_bet(bet)
+            >>> print(success)
+            True
+        """
         """
         Place a new paper bet.
         bet_data: dict with keys (GreyhoundName, RaceNumber, TrackName, Strategy, Odds, Stake)
@@ -80,21 +147,59 @@ class PaperTradingManager:
         conn.close()
         return True
 
-    def get_active_bets(self):
+    def get_active_bets(self) -> pd.DataFrame:
+        """Get all open (unset tled) paper bets.
+        
+        Returns:
+            DataFrame with all OPEN status bets, sorted by BetDate descending
+        
+        Example:
+            >>> active = manager.get_active_bets()
+            >>> print(f"Open bets: {len(active)}")
+            Open bets: 5
+        """
         """Get all open bets"""
         conn = sqlite3.connect(DB_PATH)
         df = pd.read_sql_query("SELECT * FROM PaperBets WHERE Status='OPEN' ORDER BY BetDate DESC", conn)
         conn.close()
         return df
 
-    def get_bet_history(self):
+    def get_bet_history(self) -> pd.DataFrame:
+        """Get all settled paper bets (WIN, LOSS, VOID).
+        
+        Returns:
+            DataFrame with all non-OPEN status bets, sorted by BetDate descending
+        
+        Example:
+            >>> history = manager.get_bet_history()
+            >>> wins = history[history['Status'] == 'WIN']
+            >>> print(f"Total wins: {len(wins)}")
+            Total wins: 120
+        """
         """Get all settled bets"""
         conn = sqlite3.connect(DB_PATH)
         df = pd.read_sql_query("SELECT * FROM PaperBets WHERE Status!='OPEN' ORDER BY BetDate DESC", conn)
         conn.close()
         return df
 
-    def get_stats(self):
+    def get_stats(self) -> Dict[str, float]:
+        """Calculate performance statistics from bet history.
+        
+        Computes total bets, wins, strike rate, profit, and ROI from settled bets.
+        
+        Returns:
+            Dictionary with keys:
+                - bets (int): Total number of settled bets
+                - wins (int): Number of winning bets
+                - strike_rate (float): Win percentage (0-100)
+                - profit (float): Total profit/loss
+                - roi (float): Return on investment percentage
+        
+        Example:
+            >>> stats = manager.get_stats()
+            >>> print(f"ROI: {stats['roi']:.2f}%")
+            ROI: +5.67%
+        """
         """Calculate performance stats"""
         df = self.get_bet_history()
         if len(df) == 0:
@@ -113,7 +218,20 @@ class PaperTradingManager:
             'roi': (profit / total_stake) * 100 if total_stake > 0 else 0
         }
 
-    def reconcile_bets(self):
+    def reconcile_bets(self) -> int:
+        """Check racing database for results of open bets and settle them.
+        
+        Queries the main greyhound racing database for race results, then updates
+        paper bets with WIN/LOSS status and calculates P/L.
+        
+        Returns:
+            Number of bets settled (int)
+        
+        Example:
+            >>> settled = manager.reconcile_bets()
+            >>> print(f"Settled {settled} bets")
+            Settled 3 bets
+        """
         """Check racing DB for results of open bets"""
         # 1. Get Open Bets
         active_bets = self.get_active_bets()
@@ -225,7 +343,20 @@ class PaperTradingManager:
         
         return updates
 
-    def delete_bet(self, bet_id):
+    def delete_bet(self, bet_id: int) -> bool:
+        """Delete a paper bet by ID.
+        
+        Args:
+            bet_id: BetID of bet to delete
+        
+        Returns:
+            True if bet was deleted, False if bet not found
+        
+        Example:
+            >>> success = manager.delete_bet(bet_id=15)
+            >>> print(success)
+            True
+        """
         """Delete a bet by ID"""
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()

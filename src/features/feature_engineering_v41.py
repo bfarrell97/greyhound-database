@@ -1,3 +1,8 @@
+"""Legacy feature engineering (V41) - DEPRECATED.
+
+⚠️ Older version kept for reference. Use feature_engineering.py instead.
+"""
+
 import pandas as pd
 import numpy as np
 import warnings

@@ -1,15 +1,62 @@
+"""Discord notifications for betting events via webhooks.
+
+Sends rich embed notifications to Discord for bet placements, results, and schedules.
+Uses non-blocking threads to avoid delaying main application.
+
+Example:
+    >>> from src.utils.discord_notifier import DiscordNotifier
+    >>> bet = {'dog': 'Fast Freddy', 'stake': 10, 'price': 6.0, ...}
+    >>> DiscordNotifier.send_bet_placed(bet)
+    # Sends notification to Discord channel
+"""
 
 import requests
 import json
 import threading
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 from src.core.config import DISCORD_WEBHOOK_URL
 
+
 class DiscordNotifier:
+    """Sends betting notifications to Discord via webhook URLs.
+    
+    Provides static methods for sending various notification types:
+    - Bet placement alerts
+    - Scheduled bet summaries
+    - Custom notifications with rich embeds
+    
+    All sends are non-blocking (threaded) to avoid application delays.
+    
+    Example:
+        >>> DiscordNotifier.send_notification("Alert", "System started", color=0x00ff00)
+    """
     """Sends betting notifications to Discord via Webhook"""
     
     @staticmethod
-    def send_notification(title: str, message: str, color: int = 0x00ff00, fields: list = None):
+    def send_notification(
+        title: str,
+        message: str,
+        color: int = 0x00ff00,
+        fields: Optional[List[Dict[str, Any]]] = None
+    ) -> None:
+        """Send a rich embed notification to Discord.
+        
+        Args:
+            title: Embed title (bold header)
+            message: Embed description (main text)
+            color: Hex color code for sidebar (default: green 0x00ff00).
+                  0x00ff00=Green, 0xff0000=Red, 0xffff00=Yellow
+            fields: List of embed fields with 'name', 'value', 'inline' keys (optional)
+        
+        Example:
+            >>> DiscordNotifier.send_notification(
+            ...     "Bet Placed",
+            ...     "Fast Freddy @ $6.00",
+            ...     color=0x00ff00,
+            ...     fields=[{'name': 'Stake', 'value': '$10', 'inline': True}]
+            ... )
+        """
         """
         Send a rich embed notification
         Color: 0x00ff00 (Green/Placed), 0xff0000 (Red/Error), 0xffff00 (Yellow/Info)
@@ -48,7 +95,31 @@ class DiscordNotifier:
         threading.Thread(target=_send, daemon=True).start()
 
     @staticmethod
-    def send_bet_placed(bet_details: dict):
+    def send_bet_placed(bet_details: Dict[str, Any]) -> None:
+        """Send a formatted bet placement notification.
+        
+        Args:
+            bet_details: Dictionary with keys:
+                - dog (str): Dog name
+                - box (int): Box number
+                - race (int): Race number
+                - track (str): Track name
+                - stake (float): Bet amount
+                - price (float): Odds
+                - type/strategy (str): Strategy used
+        
+        Example:
+            >>> bet = {
+            ...     'dog': 'Fast Freddy',
+            ...     'box': 1,
+            ...     'race': 5,
+            ...     'track': 'Wentworth Park',
+            ...     'stake': 10.0,
+            ...     'price': 6.0,
+            ...     'strategy': 'V44_BACK'
+            ... }
+            >>> DiscordNotifier.send_bet_placed(bet)
+        """
         """Format a bet placement notification"""
         # bet_details keys: dog, box, race, track, stake, price, type
         
@@ -77,7 +148,28 @@ class DiscordNotifier:
         DiscordNotifier.send_notification(title, desc, 0x00ff00, fields)
 
     @staticmethod
-    def send_schedule_summary(bets_list: list):
+    def send_schedule_summary(bets_list: List[Dict[str, Any]]) -> None:
+        """Send a summary of upcoming scheduled bets.
+        
+        Formats multiple bets into a single notification with time-sorted list.
+        Limits to 25 bets (Discord embed field limit).
+        
+        Args:
+            bets_list: List of bet dictionaries with keys:
+                - time_str (str): Race time (HH:MM format)
+                - dog (str): Dog name
+                - box (int): Box number
+                - track (str): Track name
+                - stake (float): Bet amount
+                - rated_price (float): Predicted odds
+        
+        Example:
+            >>> bets = [
+            ...     {'time_str': '14:30', 'dog': 'Dog A', 'box': 1, ...},
+            ...     {'time_str': '15:00', 'dog': 'Dog B', 'box': 3, ...}
+            ... ]
+            >>> DiscordNotifier.send_schedule_summary(bets)
+        """
         """Send a summary of upcoming scheduled bets"""
         if not bets_list:
             return

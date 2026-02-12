@@ -1,24 +1,74 @@
+"""Machine learning prediction wrapper for greyhound race outcomes.
+
+This module provides the RacePredictor class which handles:
+- Loading pre-trained XGBoost models (PIR split time, Pace finish time)
+- Calculating track/distance benchmarks from historical data
+- Feature engineering (lag features, rolling averages)
+- Batch prediction for upcoming race runners
+
+Models predict normalized times (relative to track/distance medians) to handle
+different track configurations.
+
+Example:
+    >>> from src.core.predictor import RacePredictor
+    >>> predictor = RacePredictor()
+    >>> runners_df = get_today_runners()
+    >>> history_df = get_historical_data()
+    >>> predictions = predictor.predict_batch(runners_df, history_df)
+    >>> print(predictions[['NameKey', 'PredictedSplit', 'PredictedPace']])
+"""
 
 import os
 import pickle
 import sqlite3
+from typing import Optional
 import pandas as pd
 import numpy as np
 import xgboost as xgb
 
-PIR_MODEL_PATH = 'models/pir_xgb_model.pkl'
-PACE_MODEL_PATH = 'models/pace_xgb_model.pkl'
-DB_PATH = 'greyhound_racing.db'
+PIR_MODEL_PATH: str = 'models/pir_xgb_model.pkl'
+PACE_MODEL_PATH: str = 'models/pace_xgb_model.pkl'
+DB_PATH: str = 'greyhound_racing.db'
+
 
 class RacePredictor:
-    def __init__(self):
+    """XGBoost-based predictor for split times and finish times.
+    
+    Loads pre-trained models and track/distance benchmarks on initialization.
+    Uses lag features and rolling averages for time-series prediction.
+    
+    Attributes:
+        pir_model: Loaded PIR (split time) XGBoost model
+        pace_model: Loaded Pace (finish time) XGBoost model
+        benchmarks (pd.DataFrame): Track/distance median times
+    
+    Example:
+        >>> predictor = RacePredictor()
+        >>> # Check if models loaded
+        >>> print(predictor.pir_model is not None)
+        True
+    """
+
+    def __init__(self) -> None:
+        """Initialize predictor by loading models and benchmarks.
+        
+        Attempts to load PIR and Pace models from disk. If models don't exist,
+        prediction will fall back to NaN (no prediction).
+        
+        Also loads track/distance benchmarks from historical data for normalization.
+        """
         self.pir_model = None
         self.pace_model = None
         self.benchmarks = None
         self._load_models()
         self._load_benchmarks()
 
-    def _load_models(self):
+    def _load_models(self) -> None:
+        """Load pre-trained XGBoost models from disk.
+        
+        Attempts to load PIR (split time) and Pace (finish time) models.
+        Prints status messages. Gracefully handles missing files.
+        """
         # Load PIR Model
         if os.path.exists(PIR_MODEL_PATH):
             try:
@@ -37,7 +87,14 @@ class RacePredictor:
             except Exception as e:
                 print(f"[RacePredictor] Error loading Pace model: {e}")
 
-    def _load_benchmarks(self):
+    def _load_benchmarks(self) -> None:
+        """Load track/distance median times from historical database.
+        
+        Calculates median split times and finish times for each track/distance
+        combination. Used for normalizing predictions across different tracks.
+        
+        Filters invalid times (splits <0 or >30, finish times <15 or >50).
+        """
         """Loads static Track/Distance medians for both Split and FinishTime."""
         try:
             conn = sqlite3.connect(DB_PATH)
@@ -76,7 +133,32 @@ class RacePredictor:
             print(f"[RacePredictor] Error loading benchmarks: {e}")
             self.benchmarks = None
 
-    def predict_batch(self, runners_df, full_history_df):
+    def predict_batch(
+        self,
+        runners_df: pd.DataFrame,
+        full_history_df: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Predict split and pace times for batch of runners.
+        
+        Calculates features from historical data and generates predictions using
+        loaded XGBoost models. Returns dataframe with predicted times.
+        
+        Args:
+            runners_df: Today's runners with columns: NameKey, TrackName, Distance, 
+                       Box, MeetingDate
+            full_history_df: Historical race data for feature engineering with columns:
+                            NameKey, TrackName, Distance, Split, FinishTime, MeetingDate
+        
+        Returns:
+            DataFrame with columns: NameKey, PredictedSplit, PredictedPace, DaysSince
+        
+        Example:
+            >>> runners = pd.DataFrame({'NameKey': ['DOG_A'], 'Distance': [500], ...})
+            >>> history = get_historical_data()
+            >>> predictions = predictor.predict_batch(runners, history)
+            >>> print(predictions['PredictedSplit'].iloc[0])
+            17.52
+        """
         """
         Predicts Split and Pace for a batch of runners.
         Returns: runners_df with 'PredictedSplit' and 'PredictedPace'.
@@ -177,7 +259,22 @@ class RacePredictor:
             
         return model_input[['NameKey', 'PredictedSplit', 'PredictedPace', 'DaysSince']]
 
-    def _fallback_prediction(self, runners_df, full_history_df):
+    def _fallback_prediction(
+        self,
+        runners_df: pd.DataFrame,
+        full_history_df: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Fallback prediction when benchmarks unavailable.
+        
+        Returns NaN for all predictions when models or benchmarks cannot be loaded.
+        
+        Args:
+            runners_df: Today's runners dataframe
+            full_history_df: Historical data (unused in fallback)
+        
+        Returns:
+            DataFrame with NaN predictions and DaysSince=999
+        """
         # Fallback averages
         res = runners_df.copy()
         res['PredictedSplit'] = np.nan
