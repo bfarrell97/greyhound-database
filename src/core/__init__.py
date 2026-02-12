@@ -21,11 +21,11 @@ Example:
 from src.core.database import GreyhoundDatabase
 from src.core.live_betting import LiveBettingManager
 from src.core.paper_trading import PaperTradingManager
-from src.core.predictor import Predictor
+from src.core.predictor import RacePredictor
 
 __all__ = [
     'GreyhoundDatabase',
     'LiveBettingManager',
     'PaperTradingManager',
-    'Predictor',
+    'RacePredictor',
 ]
